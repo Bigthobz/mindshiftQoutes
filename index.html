@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindShift | Aesthetic Quote Display & Ambient Slideshow</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@400;500;700&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'Georgia', 'serif'],
+                        cinzel: ['Cinzel', 'serif'],
+                        mono: ['Space Grotesk', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            900: '#1e3a8a',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 8s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Ambient Backgrounds */
+        .bg-gradient-aurora {
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #311042, #022c22);
+            background-size: 400% 400%;
+            animation: gradientBG 18s ease infinite;
+        }
+        .bg-gradient-sunset {
+            background: linear-gradient(-45deg, #2e1065, #701a75, #831843, #1e1b4b);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        .bg-gradient-emerald {
+            background: linear-gradient(-45deg, #022c22, #064e3b, #0f172a, #134e4a);
+            background-size: 400% 400%;
+            animation: gradientBG 20s ease infinite;
+        }
+        .bg-gradient-monochrome {
+            background: linear-gradient(-45deg, #09090b, #18181b, #27272a, #09090b);
+            background-size: 400% 400%;
+            animation: gradientBG 12s ease infinite;
+        }
+        .bg-gradient-cyber {
+            background: linear-gradient(-45deg, #030712, #1e1b4b, #4c0519, #09090b);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Smooth quote slide & crossfade transitions */
+        .quote-transition {
+            transition: opacity 800ms cubic-bezier(0.4, 0, 0.2, 1), transform 800ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .quote-hidden {
+            opacity: 0;
+            transform: translateY(16px) scale(0.98);
+        }
+        .quote-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        /* Glassmorphism */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-panel-light {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.3);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.5);
+        }
+    </style>
+</head>
+<body class="h-full font-sans antialiased bg-slate-950 text-slate-100 overflow-x-hidden selection:bg-brand-500 selection:text-white">
+
+    <!-- MAIN APP CONTAINER -->
+    <div id="app" class="min-h-screen flex flex-col justify-between relative bg-gradient-aurora transition-all duration-1000">
+
+        <!-- TOP BAR / HEADER NAVIGATION -->
+        <header id="mainHeader" class="w-full z-30 p-4 md:p-6 flex justify-between items-center transition-opacity duration-500">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-brand-400 font-bold text-xl shadow-lg">
+                    <i class="fa-solid font-cinzel text-lg">M</i>
+                </div>
+                <div>
+                    <h1 class="font-cinzel text-lg md:text-xl font-bold tracking-wider text-white">MINDSHIFT</h1>
+                    <p class="text-xs text-slate-400 tracking-wider uppercase font-mono">Personal Quote Sanctuary</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 md:space-x-3">
+                <!-- Category Filter Button -->
+                <div class="relative">
+                    <select id="categoryFilter" onchange="filterCategory(this.value)" class="bg-slate-900/70 text-slate-200 border border-slate-700/80 rounded-lg px-3 py-2 text-xs md:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 backdrop-blur-md cursor-pointer transition">
+                        <option value="ALL">All Categories</option>
+                        <!-- Dynamic Categories populated via JS -->
+                    </select>
+                </div>
+
+                <!-- Theme / Visual Selector Dropdown -->
+                <button onclick="toggleThemeMenu()" class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-700/60 hover:bg-slate-800 text-slate-200 transition text-sm flex items-center space-x-2" title="Change Theme">
+                    <i class="fa-solid fa-palette text-slate-300"></i>
+                    <span class="hidden md:inline text-xs font-medium">Theme</span>
+                </button>
+
+                <!-- Manage Quotes Drawer Toggle -->
+                <button onclick="openDrawer()" class="px-3 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-medium text-xs md:text-sm flex items-center space-x-2 transition shadow-md shadow-brand-900/30">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span class="hidden sm:inline">My Quotes</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- THEME MENU MODAL / POPUP -->
+        <div id="themeMenu" class="hidden absolute top-20 right-6 z-40 w-64 glass-panel rounded-2xl p-4 shadow-2xl border border-white/10 animate-fade-in">
+            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Visual Backgrounds</h4>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <button onclick="setBgTheme('aurora')" class="p-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-brand-500 text-left flex items-center space-x-2">
+                    <span class="w-3 h-3 rounded-full bg-indigo-500 inline-block"></span>
+                    <span>Aurora</span>
+                </button>
+                <button onclick="setBgTheme('sunset')" class="p-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-pink-500 text-left flex items-center space-x-2">
+                    <span class="w-3 h-3 rounded-full bg-pink-500 inline-block"></span>
+                    <span>Velvet</span>
+                </button>
+                <button onclick="setBgTheme('emerald')" class="p-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-emerald-500 text-left flex items-center space-x-2">
+                    <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                    <span>Deep Sage</span>
+                </button>
+                <button onclick="setBgTheme('cyber')" class="p-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-purple-500 text-left flex items-center space-x-2">
+                    <span class="w-3 h-3 rounded-full bg-purple-500 inline-block"></span>
+                    <span>Cyber Midnight</span>
+                </button>
+                <button onclick="setBgTheme('monochrome')" class="p-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-400 text-left flex items-center space-x-2 col-span-2">
+                    <span class="w-3 h-3 rounded-full bg-slate-400 inline-block"></span>
+                    <span>Minimal Obsidian</span>
+                </button>
+            </div>
+
+            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-4 mb-3">Font Styles</h4>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <button onclick="setFontStyle('sans')" class="p-2 rounded-lg bg-slate-900 border border-slate-700 hover:border-brand-500 font-sans">Modern</button>
+                <button onclick="setFontStyle('serif')" class="p-2 rounded-lg bg-slate-900 border border-slate-700 hover:border-brand-500 font-serif">Serif</button>
+                <button onclick="setFontStyle('cinzel')" class="p-2 rounded-lg bg-slate-900 border border-slate-700 hover:border-brand-500 font-cinzel">Cinzel</button>
+                <button onclick="setFontStyle('mono')" class="p-2 rounded-lg bg-slate-900 border border-slate-700 hover:border-brand-500 font-mono">Tech</button>
+            </div>
+        </div>
+
+        <!-- MAIN DISPLAY AREA (FULLSCREEN DISPLAY VIEWPORT) -->
+        <main id="displayContainer" onclick="handleDisplayClick(event)" class="flex-1 flex flex-col items-center justify-center p-6 md:p-12 text-center cursor-pointer select-none relative group">
+            
+            <!-- Click instruction subtle cue -->
+            <div class="absolute top-4 text-xs text-slate-400/60 font-mono opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                Tap anywhere for next quote • Press [SPACE] or [F] for Fullscreen
+            </div>
+
+            <!-- QUOTE CARD CONTAINER -->
+            <div id="quoteBox" class="max-w-4xl w-full mx-auto px-4 quote-transition quote-visible flex flex-col items-center">
+                <!-- Category Tag Badge -->
+                <div id="quoteCategory" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-mono uppercase tracking-widest bg-white/10 text-brand-300 border border-white/10 mb-6 shadow-sm backdrop-blur-md">
+                    Focus & Discipline
+                </div>
+
+                <!-- Main Quote Content -->
+                <blockquote id="quoteText" class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold leading-relaxed sm:leading-snug md:leading-tight tracking-tight text-slate-50 drop-shadow-md font-serif max-w-3xl">
+                    "Deep focus – deep work – deep understanding and results."
+                </blockquote>
+
+                <!-- Quote Counter / Context Info -->
+                <div class="mt-8 flex items-center space-x-3 text-slate-400 font-mono text-xs">
+                    <span id="quoteIndex">1 / 30</span>
+                    <span>•</span>
+                    <span id="quoteTimestamp">Added recently</span>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- BOTTOM CONTROLS & SLIDESHOW STATUS BAR -->
+        <footer id="mainFooter" class="w-full z-30 p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 transition-opacity duration-500">
+            
+            <!-- Left: Slideshow Controls -->
+            <div class="flex items-center space-x-3 bg-slate-900/70 border border-slate-800 rounded-2xl p-1.5 backdrop-blur-md">
+                <!-- Play/Pause Auto-Slide -->
+                <button id="slideshowToggleBtn" onclick="toggleSlideshow()" class="w-10 h-10 rounded-xl bg-brand-600 hover:bg-brand-500 text-white flex items-center justify-center transition shadow-lg">
+                    <i id="slideshowIcon" class="fa-solid fa-play text-sm"></i>
+                </button>
+
+                <!-- Interval Selector -->
+                <div class="flex items-center space-x-1 text-xs text-slate-300 px-2 font-mono">
+                    <i class="fa-regular fa-clock text-slate-400"></i>
+                    <select id="intervalSelect" onchange="changeInterval(this.value)" class="bg-transparent text-slate-200 focus:outline-none cursor-pointer font-sans text-xs">
+                        <option value="5" class="bg-slate-900">5s</option>
+                        <option value="10" selected class="bg-slate-900">10s</option>
+                        <option value="30" class="bg-slate-900">30s</option>
+                        <option value="60" class="bg-slate-900">1 min</option>
+                        <option value="300" class="bg-slate-900">5 min</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Center: Navigation Buttons -->
+            <div class="flex items-center space-x-2">
+                <button onclick="prevQuote()" class="w-11 h-11 rounded-xl bg-slate-900/60 hover:bg-slate-800 border border-slate-700/60 text-slate-200 flex items-center justify-center transition hover:scale-105 active:scale-95" title="Previous Quote (Left Arrow)">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <button onclick="nextRandomQuote()" class="px-5 h-11 rounded-xl bg-slate-900/60 hover:bg-slate-800 border border-slate-700/60 text-slate-200 font-medium text-xs md:text-sm flex items-center space-x-2 transition hover:scale-105 active:scale-95" title="Next Random Quote (Spacebar)">
+                    <i class="fa-solid fa-shuffle text-brand-400"></i>
+                    <span>Random</span>
+                </button>
+                <button onclick="nextQuote()" class="w-11 h-11 rounded-xl bg-slate-900/60 hover:bg-slate-800 border border-slate-700/60 text-slate-200 flex items-center justify-center transition hover:scale-105 active:scale-95" title="Next Quote (Right Arrow)">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <!-- Right: Ambient Mode & Share -->
+            <div class="flex items-center space-x-2">
+                <button onclick="copyCurrentQuote()" class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-700/60 text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Copy Text">
+                    <i class="fa-regular fa-copy"></i>
+                </button>
+                <button onclick="toggleZenMode()" class="px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700/60 text-slate-300 hover:text-white hover:bg-slate-800 transition text-xs flex items-center space-x-2" title="Zen Fullscreen Mode (Press F)">
+                    <i class="fa-solid fa-expand"></i>
+                    <span class="hidden lg:inline">Zen View</span>
+                </button>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- MANAGE QUOTES MODAL / SIDE DRAWER -->
+    <div id="drawerOverlay" onclick="closeDrawer()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+
+    <aside id="quoteDrawer" class="fixed top-0 right-0 bottom-0 w-full max-w-lg bg-slate-900 border-l border-slate-800 z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col shadow-2xl">
+        <!-- Drawer Header -->
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-layer-group text-brand-500"></i>
+                <h3 class="font-bold text-lg text-white">Quote Library</h3>
+                <span id="drawerCountBadge" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-mono">30</span>
+            </div>
+            <button onclick="closeDrawer()" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Tab Controls inside Drawer -->
+        <div class="flex border-b border-slate-800 bg-slate-950/30 text-xs font-semibold">
+            <button id="tabBtnList" onclick="switchDrawerTab('list')" class="flex-1 py-3 text-center border-b-2 border-brand-500 text-brand-400 transition">All Quotes</button>
+            <button id="tabBtnAdd" onclick="switchDrawerTab('add')" class="flex-1 py-3 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">+ Add New</button>
+            <button id="tabBtnBatch" onclick="switchDrawerTab('batch')" class="flex-1 py-3 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">Bulk Paste</button>
+        </div>
+
+        <!-- Drawer Content Area -->
+        <div class="flex-1 overflow-y-auto p-5">
+            
+            <!-- TAB 1: LIST OF QUOTES -->
+            <div id="tabList" class="space-y-3">
+                <!-- Search Box -->
+                <div class="relative mb-4">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-500 text-xs"></i>
+                    <input type="text" id="searchInput" oninput="renderQuotesList()" placeholder="Search quotes or categories..." class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition">
+                </div>
+                
+                <div id="quotesListContainer" class="space-y-3">
+                    <!-- Dynamic quotes items inserted here -->
+                </div>
+            </div>
+
+            <!-- TAB 2: ADD SINGLE QUOTE -->
+            <div id="tabAdd" class="hidden space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Quote Content</label>
+                    <textarea id="addQuoteText" rows="4" placeholder="Enter your quote here..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 focus:outline-none focus:border-brand-500 transition resize-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Category</label>
+                    <input type="text" id="addQuoteCategory" placeholder="e.g., Focus & Discipline, Mindset, Business..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-brand-500 transition">
+                </div>
+                <button onclick="saveNewQuote()" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-brand-900/30">
+                    Save Quote
+                </button>
+            </div>
+
+            <!-- TAB 3: BULK IMPORT / PASTE -->
+            <div id="tabBatch" class="hidden space-y-4">
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Paste multiple quotes below. Place each new quote on a separate line.
+                </p>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Assign Category to Batch</label>
+                    <input type="text" id="batchCategory" placeholder="e.g. Personal Thoughts" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-brand-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Bulk Quotes Input</label>
+                    <textarea id="batchText" rows="8" placeholder="Quote 1&#10;Quote 2&#10;Quote 3..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-none focus:border-brand-500 transition resize-none"></textarea>
+                </div>
+                <button onclick="saveBatchQuotes()" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl text-xs uppercase tracking-wider transition">
+                    Import All Lines
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Drawer Footer (Backup & Reset) -->
+        <div class="p-4 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between text-xs">
+            <button onclick="exportQuotesJSON()" class="text-slate-400 hover:text-slate-200 transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-download"></i>
+                <span>Export Backup</span>
+            </button>
+            <button onclick="resetToDefaults()" class="text-red-400/80 hover:text-red-300 transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span>Reset Default Quotes</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 glass-panel px-4 py-2.5 rounded-full text-xs font-medium text-white shadow-xl opacity-0 pointer-events-none transition-all duration-300 flex items-center space-x-2">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMsg">Notification message</span>
+    </div>
+
+    <!-- JAVASCRIPT APPLICATION LOGIC -->
+    <script>
+        // INITIAL DEFAULT QUOTES DATASET (USER'S PERSONAL QUOTES)
+        const DEFAULT_QUOTES = [
+            // Focus & Mindset
+            { id: 1, text: "Deep focus – deep work – deep understanding and results.", category: "Focus & Discipline" },
+            { id: 2, text: "Where you place your attention changes how your mind and body feel.", category: "Focus & Discipline" },
+            { id: 3, text: "Man needs to focus on and control what happens next! And at the present. Past and reflection are not for men. The present judge what’s next!", category: "Focus & Discipline" },
+            { id: 4, text: "Power in stillness, power in moving slow, power in staying calm.", category: "Focus & Discipline" },
+            { id: 5, text: "Avoiding a feeling, avoiding something is a form of fear.", category: "Focus & Discipline" },
+            { id: 6, text: "Life’s simple, you make choices and you don’t look back!", category: "Focus & Discipline" },
+            { id: 7, text: "Replace “expression” with “intention”.", category: "Focus & Discipline" },
+
+            // Autonomy & Self-Mastery
+            { id: 8, text: "Embrace who you really are, and you will have the strength to walk it. And you will never have to be afraid again.", category: "Autonomy & Sanity" },
+            { id: 9, text: "Don’t box yourself. Don’t give away your power to anything.", category: "Autonomy & Sanity" },
+            { id: 10, text: "Don’t give away autonomy to anything, any theory or anyone. It’s a mental trap... Cut it off, protect your sanity, don’t allow yourself to be mentally enslaved or hypnotised.", category: "Autonomy & Sanity" },
+            { id: 11, text: "Silence is sometime the best answer after triggers...", category: "Autonomy & Sanity" },
+            { id: 12, text: "Cutting low value friends off. Setting hard boundaries. Being emotionally numb and unprovoked. Play dumb, let them keep talking shit, fooling themselves, enjoying listening and not talking.", category: "Autonomy & Sanity" },
+            { id: 13, text: "The secret to keeping your respect is not sharing. Bottle it. Real men bottle it all, your advice, your view, your ideas, your problems, your ambitions, your moves, your goals, your plans. Speak only when spoken to.", category: "Autonomy & Sanity" },
+            { id: 14, text: "Be really interested in listening to people, hearing what people want to say. Be okay with not sharing, with not talking.", category: "Autonomy & Sanity" },
+            { id: 15, text: "Getting you to talk about yourself. Which will cause see finish. It’s best to keep yourself secret. Your identity secret, your knowledge secret.", category: "Autonomy & Sanity" },
+
+            // Business & Ambition
+            { id: 16, text: "To achieve a new level of success, you have to embrace the new you and let go of the old you!!", category: "Career & Ambition" },
+            { id: 17, text: "We all need to have a rage against poverty.", category: "Career & Ambition" },
+            { id: 18, text: "Never take your mom dad seriously when it comes to business, they are never going to support you to start a business, I have to leverage on what I do best, my strength, focus on being a capitalist.", category: "Career & Ambition" },
+            { id: 19, text: "Set up an online business abroad serving the white needs while residing in Nigeria. Find a representative or a cofounder to support you in setting it up. Your job will be to find customers and be a customer representative.", category: "Career & Ambition" },
+            { id: 20, text: "Workplace is a competitive environment. Recognizing your opponent is important, also one must be very smooth and accurate in everything one does. A little work done in slow pace and accurately supercedes large work done with errors.", category: "Career & Ambition" },
+            { id: 21, text: "Number one problem I SUFFER AT WORK IS ENVY AND WAY OF LIFE.", category: "Career & Ambition" },
+            { id: 22, text: "Don’t comment, keep your opinions to yourself, do as you as told, put your hands on your chin and keep looking where the tree will fall too.", category: "Career & Ambition" },
+
+            // Relationships & Social Dynamics
+            { id: 23, text: "Build yourself into someone of high value. Surround yourself with people who elevate you. Present yourself with confidence and excellence. But choose people based on character first, because status without character is fragile.", category: "Relationships & Dynamics" },
+            { id: 24, text: "What makes a man grow is the quality of friends he has.", category: "Relationships & Dynamics" },
+            { id: 25, text: "You can be firm and not rude. You can say your mind with laughter and smiles and still be blunt.", category: "Relationships & Dynamics" },
+            { id: 26, text: "How you carry yourself communicates something: Speaking confidently shows self-respect. Dressing well shows care and discipline. Having a positive outlook attracts people. Developing good manners and social skills improves opportunities.", category: "Relationships & Dynamics" },
+            { id: 27, text: "Dress to express how bold you are.", category: "Relationships & Dynamics" },
+            { id: 28, text: "You don’t look at how someone is behaving or doing, you have to focus on what you want from them. Attention is the love people want.", category: "Relationships & Dynamics" },
+            { id: 29, text: "If you really like the person and desire them. You won’t stop trying.", category: "Relationships & Dynamics" },
+            { id: 30, text: "Being able to control, manipulate a man is one great skill to success!", category: "Relationships & Dynamics" },
+            { id: 31, text: "Man who goes after his desires quietly and gets it. Go again gets it, builds a winner mentality. If you can get a girl, you can get a contract. Getting a girl you desire, it’s first place to building a winner mentality.", category: "Relationships & Dynamics" },
+
+            // Health & Life Truths
+            { id: 32, text: "Color urine and bubble urine needs you need more water.", category: "Health & Habit Realism" },
+            { id: 33, text: "Avoid food that don’t spoil after 24 hours.", category: "Health & Habit Realism" },
+            { id: 34, text: "Olive oil is bad with heat, just use it naturally. Normal oil should be sprayed.", category: "Health & Habit Realism" },
+            { id: 35, text: "Limit your salt intake, it’s a dangerous recipe.", category: "Health & Habit Realism" },
+            { id: 36, text: "Smoking affects my ability to get erection.", category: "Health & Habit Realism" },
+            { id: 37, text: "My greatest addiction is my phone. I hope it makes you money.", category: "Health & Habit Realism" },
+            { id: 38, text: "I need to start reading news, non fiction reports, no third party narration or hearsay or movie acting.", category: "Health & Habit Realism" },
+            { id: 39, text: "If rain fall for Lagos, just cancel your outing. Both the legs and car will run from rain and flooding.", category: "Health & Habit Realism" }
+        ];
+
+        // APP STATE
+        let quotes = [];
+        let filteredQuotes = [];
+        let currentIndex = 0;
+        let isSlideshowActive = false;
+        let slideshowTimer = null;
+        let intervalSeconds = 10;
+        let activeCategory = 'ALL';
+        let currentTheme = 'aurora';
+        let currentFont = 'serif';
+        let isZenMode = false;
+
+        // INITIALIZATION
+        window.onload = function() {
+            loadQuotesFromStorage();
+            populateCategoryFilter();
+            renderQuotesList();
+            displayCurrentQuote();
+            setupKeyboardShortcuts();
+        };
+
+        // LOCAL STORAGE LOGIC
+        function loadQuotesFromStorage() {
+            const saved = localStorage.getItem('mindshift_user_quotes');
+            if (saved) {
+                try {
+                    quotes = JSON.parse(saved);
+                } catch(e) {
+                    quotes = [...DEFAULT_QUOTES];
+                }
+            } else {
+                quotes = [...DEFAULT_QUOTES];
+                saveQuotesToStorage();
+            }
+            applyFilters();
+        }
+
+        function saveQuotesToStorage() {
+            localStorage.setItem('mindshift_user_quotes', JSON.stringify(quotes));
+        }
+
+        // CATEGORY & FILTERING
+        function populateCategoryFilter() {
+            const categories = Array.from(new Set(quotes.map(q => q.category || 'General')));
+            const select = document.getElementById('categoryFilter');
+            select.innerHTML = `<option value="ALL">All Categories (${quotes.length})</option>`;
+            
+            categories.forEach(cat => {
+                const count = quotes.filter(q => q.category === cat).length;
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = `${cat} (${count})`;
+                select.appendChild(opt);
+            });
+        }
+
+        function filterCategory(cat) {
+            activeCategory = cat;
+            applyFilters();
+            currentIndex = 0;
+            displayCurrentQuote();
+        }
+
+        function applyFilters() {
+            if (activeCategory === 'ALL') {
+                filteredQuotes = [...quotes];
+            } else {
+                filteredQuotes = quotes.filter(q => (q.category || 'General') === activeCategory);
+            }
+
+            if (filteredQuotes.length === 0) {
+                filteredQuotes = [...quotes];
+            }
+        }
+
+        // DISPLAY QUOTE WITH FADE TRANSITION
+        function displayCurrentQuote() {
+            if (filteredQuotes.length === 0) return;
+
+            const quoteBox = document.getElementById('quoteBox');
+            const textElem = document.getElementById('quoteText');
+            const categoryElem = document.getElementById('quoteCategory');
+            const indexElem = document.getElementById('quoteIndex');
+
+            // Trigger fade out
+            quoteBox.classList.remove('quote-visible');
+            quoteBox.classList.add('quote-hidden');
+
+            setTimeout(() => {
+                const current = filteredQuotes[currentIndex];
+                textElem.textContent = `"${current.text}"`;
+                categoryElem.textContent = current.category || 'General';
+                indexElem.textContent = `${currentIndex + 1} / ${filteredQuotes.length}`;
+
+                // Trigger fade in
+                quoteBox.classList.remove('quote-hidden');
+                quoteBox.classList.add('quote-visible');
+            }, 400);
+        }
+
+        // NAVIGATION CONTROLS
+        function nextQuote() {
+            if (filteredQuotes.length === 0) return;
+            currentIndex = (currentIndex + 1) % filteredQuotes.length;
+            displayCurrentQuote();
+        }
+
+        function prevQuote() {
+            if (filteredQuotes.length === 0) return;
+            currentIndex = (currentIndex - 1 + filteredQuotes.length) % filteredQuotes.length;
+            displayCurrentQuote();
+        }
+
+        function nextRandomQuote() {
+            if (filteredQuotes.length <= 1) return;
+            let nextIndex = currentIndex;
+            while (nextIndex === currentIndex) {
+                nextIndex = Math.floor(Math.random() * filteredQuotes.length);
+            }
+            currentIndex = nextIndex;
+            displayCurrentQuote();
+        }
+
+        function handleDisplayClick(event) {
+            // Avoid triggering next quote when clicking control buttons or drawer
+            if (event.target.closest('#mainHeader') || event.target.closest('#mainFooter') || event.target.closest('#themeMenu')) {
+                return;
+            }
+            nextRandomQuote();
+        }
+
+        // AUTO SLIDESHOW LOGIC
+        function toggleSlideshow() {
+            isSlideshowActive = !isSlideshowActive;
+            const btn = document.getElementById('slideshowToggleBtn');
+            const icon = document.getElementById('slideshowIcon');
+
+            if (isSlideshowActive) {
+                icon.className = 'fa-solid fa-pause text-sm';
+                btn.className = 'w-10 h-10 rounded-xl bg-amber-600 hover:bg-amber-500 text-white flex items-center justify-center transition shadow-lg animate-pulse';
+                showToast('Slideshow Mode Started', 'success');
+                startSlideshowTimer();
+            } else {
+                icon.className = 'fa-solid fa-play text-sm';
+                btn.className = 'w-10 h-10 rounded-xl bg-brand-600 hover:bg-brand-500 text-white flex items-center justify-center transition shadow-lg';
+                showToast('Slideshow Paused', 'info');
+                stopSlideshowTimer();
+            }
+        }
+
+        function startSlideshowTimer() {
+            stopSlideshowTimer();
+            slideshowTimer = setInterval(() => {
+                nextRandomQuote();
+            }, intervalSeconds * 1000);
+        }
+
+        function stopSlideshowTimer() {
+            if (slideshowTimer) {
+                clearInterval(slideshowTimer);
+                slideshowTimer = null;
+            }
+        }
+
+        function changeInterval(seconds) {
+            intervalSeconds = parseInt(seconds, 10);
+            if (isSlideshowActive) {
+                startSlideshowTimer();
+            }
+            showToast(`Interval set to ${intervalSeconds}s`, 'info');
+        }
+
+        // VISUAL THEMES & FONTS
+        function setBgTheme(theme) {
+            const app = document.getElementById('app');
+            app.className = app.className.replace(/bg-gradient-[a-z]+/g, '');
+            app.classList.add(`bg-gradient-${theme}`);
+            currentTheme = theme;
+            toggleThemeMenu();
+        }
+
+        function setFontStyle(font) {
+            const quoteText = document.getElementById('quoteText');
+            quoteText.className = quoteText.className.replace(/font-[a-z]+/g, '');
+            quoteText.classList.add(`font-${font}`);
+            currentFont = font;
+            toggleThemeMenu();
+        }
+
+        function toggleThemeMenu() {
+            const menu = document.getElementById('themeMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        // ZEN FULLSCREEN MODE
+        function toggleZenMode() {
+            isZenMode = !isZenMode;
+            const header = document.getElementById('mainHeader');
+            const footer = document.getElementById('mainFooter');
+
+            if (isZenMode) {
+                header.classList.add('opacity-0', 'pointer-events-none');
+                footer.classList.add('opacity-0', 'pointer-events-none');
+                showToast('Zen Mode Active. Press [Esc] or [F] to exit.', 'info');
+            } else {
+                header.classList.remove('opacity-0', 'pointer-events-none');
+                footer.classList.remove('opacity-0', 'pointer-events-none');
+            }
+        }
+
+        // KEYBOARD SHORTCUTS
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                // Ignore if typing inside text inputs
+                if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    nextRandomQuote();
+                } else if (e.code === 'ArrowRight') {
+                    nextQuote();
+                } else if (e.code === 'ArrowLeft') {
+                    prevQuote();
+                } else if (e.code === 'KeyF') {
+                    toggleZenMode();
+                } else if (e.code === 'KeyP') {
+                    toggleSlideshow();
+                } else if (e.code === 'Escape' && isZenMode) {
+                    toggleZenMode();
+                }
+            });
+        }
+
+        // DRAWER & TAB MANAGEMENT
+        function openDrawer() {
+            document.getElementById('quoteDrawer').classList.remove('translate-x-full');
+            document.getElementById('drawerOverlay').classList.remove('opacity-0', 'pointer-events-none');
+            renderQuotesList();
+        }
+
+        function closeDrawer() {
+            document.getElementById('quoteDrawer').classList.add('translate-x-full');
+            document.getElementById('drawerOverlay').classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function switchDrawerTab(tab) {
+            const tabs = ['list', 'add', 'batch'];
+            tabs.forEach(t => {
+                document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`).classList.add('hidden');
+                document.getElementById(`tabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`).className = 'flex-1 py-3 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition';
+            });
+
+            document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.remove('hidden');
+            document.getElementById(`tabBtn${tab.charAt(0).toUpperCase() + tab.slice(1)}`).className = 'flex-1 py-3 text-center border-b-2 border-brand-500 text-brand-400 transition font-semibold';
+        }
+
+        // RENDER QUOTES LIST IN DRAWER
+        function renderQuotesList() {
+            const container = document.getElementById('quotesListContainer');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            document.getElementById('drawerCountBadge').textContent = quotes.length;
+
+            const filtered = quotes.filter(q => 
+                q.text.toLowerCase().includes(search) || 
+                (q.category && q.category.toLowerCase().includes(search))
+            );
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs">No matching quotes found.</div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(q => `
+                <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-3 flex flex-col justify-between group hover:border-slate-700 transition">
+                    <p class="text-xs text-slate-200 font-sans leading-relaxed mb-2">"${q.text}"</p>
+                    <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                        <span class="bg-slate-900 px-2 py-0.5 rounded border border-slate-800">${q.category || 'General'}</span>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="deleteQuote(${q.id})" class="text-slate-500 hover:text-red-400 transition" title="Delete Quote">
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ADD NEW SINGLE QUOTE
+        function saveNewQuote() {
+            const textInput = document.getElementById('addQuoteText');
+            const catInput = document.getElementById('addQuoteCategory');
+
+            const text = textInput.value.trim();
+            const category = catInput.value.trim() || 'Personal';
+
+            if (!text) {
+                showToast('Please enter quote text', 'error');
+                return;
+            }
+
+            const newObj = {
+                id: Date.now(),
+                text: text,
+                category: category
+            };
+
+            quotes.unshift(newObj);
+            saveQuotesToStorage();
+            populateCategoryFilter();
+            applyFilters();
+
+            textInput.value = '';
+            catInput.value = '';
+
+            showToast('New quote added!', 'success');
+            switchDrawerTab('list');
+            renderQuotesList();
+        }
+
+        // BATCH SAVE QUOTES
+        function saveBatchQuotes() {
+            const batchText = document.getElementById('batchText').value;
+            const category = document.getElementById('batchCategory').value.trim() || 'Imported';
+
+            if (!batchText.trim()) {
+                showToast('Please enter quotes to import', 'error');
+                return;
+            }
+
+            const lines = batchText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            
+            lines.forEach((line, i) => {
+                quotes.unshift({
+                    id: Date.now() + i,
+                    text: line,
+                    category: category
+                });
+            });
+
+            saveQuotesToStorage();
+            populateCategoryFilter();
+            applyFilters();
+
+            document.getElementById('batchText').value = '';
+            document.getElementById('batchCategory').value = '';
+
+            showToast(`Imported ${lines.length} quotes!`, 'success');
+            switchDrawerTab('list');
+            renderQuotesList();
+        }
+
+        // DELETE QUOTE
+        function deleteQuote(id) {
+            quotes = quotes.filter(q => q.id !== id);
+            saveQuotesToStorage();
+            populateCategoryFilter();
+            applyFilters();
+            renderQuotesList();
+            showToast('Quote deleted', 'info');
+        }
+
+        // BACKUP & RESET
+        function exportQuotesJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(quotes, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `mindshift_quotes_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            showToast('Backup file downloaded!', 'success');
+        }
+
+        function resetToDefaults() {
+            if (confirm("Reset all quotes back to the original default set? Custom additions will be overwritten.")) {
+                quotes = [...DEFAULT_QUOTES];
+                saveQuotesToStorage();
+                populateCategoryFilter();
+                applyFilters();
+                renderQuotesList();
+                displayCurrentQuote();
+                showToast('Reset to default quotes', 'info');
+            }
+        }
+
+        // UTILITY: COPY TO CLIPBOARD
+        function copyCurrentQuote() {
+            if (filteredQuotes.length === 0) return;
+            const current = filteredQuotes[currentIndex];
+            const textToCopy = `"${current.text}" — ${current.category || 'MindShift'}`;
+
+            // Safe fallback copy
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = textToCopy;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+
+            showToast('Quote copied to clipboard!', 'success');
+        }
+
+        // TOAST NOTIFICATIONS
+        function showToast(msg, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = msg;
+            
+            if (type === 'success') {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400';
+            } else if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-rose-400';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-info text-sky-400';
+            }
+
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2600);
+        }
+    </script>
+</body>
+</html>
